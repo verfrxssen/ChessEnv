@@ -10,7 +10,7 @@ class ChessGame():
         self.screen_color = pygame.Color('white')
         self.root = 8   #jedes Schachspiel 8x8 Feld
         self.FIELD_SIZE = 100   
-        self.piece_Size = self.FIELD_SIZE - 10
+        self.piece_Size = self.FIELD_SIZE - 15
         self.screen = pygame.display.set_mode((self.FIELD_SIZE*self.root, self.FIELD_SIZE*self.root))
         self.screen_rect = self.screen.get_rect()
         self.clock = pygame.time.Clock()
@@ -27,39 +27,7 @@ class ChessGame():
         
         
         #die Figuren auf dem Brett 
-        self.pieces_on_board = [
-            pieces.Rock('Rock', 'B', (1,1)), 
-            pieces.Knight('Knight', 'B',(2,1)),
-            pieces.Bishop('Bishop', 'B',(3,1)),
-            pieces.Queen('Queen', 'B',(4,1)),
-            pieces.King('King', 'B',(5,1)),
-            pieces.Bishop('Bishop', 'B',(6,1)),
-            pieces.Knight('Knight', 'B',(7,1)),
-            pieces.Rock('Rock', 'B',(8,1)),
-            pieces.Pawn('Pawn', 'B',(1,2)),
-            pieces.Pawn('Pawn', 'B',(2,2)),
-            pieces.Pawn('Pawn', 'B',(3,2)),
-            pieces.Pawn('Pawn', 'B',(4,2)),
-            pieces.Pawn('Pawn', 'B',(5,2)),
-            pieces.Pawn('Pawn', 'B',(6,2)),
-            pieces.Pawn('Pawn', 'B',(7,2)),
-            pieces.Pawn('Pawn', 'B',(8,2)),
-            pieces.Pawn('Pawn', 'W',(1,7)),
-            pieces.Pawn('Pawn', 'W',(2,7)),
-            pieces.Pawn('Pawn', 'W',(3,7)),
-            pieces.Pawn('Pawn', 'W',(4,7)),
-            pieces.Pawn('Pawn', 'W',(5,7)),
-            pieces.Pawn('Pawn', 'W',(6,7)),
-            pieces.Pawn('Pawn', 'W',(7,7)),
-            pieces.Pawn('Pawn', 'W',(8,7)),
-            pieces.Rock('Rock', 'W',(1,8)),
-            pieces.Knight('Knight', 'W',(2,8)),
-            pieces.Bishop('Bishop', 'W',(3,8)),
-            pieces.Queen('Queen', 'W',(4,8)),
-            pieces.King('King', 'W',(5,8)),
-            pieces.Bishop('Bishop', 'W',(6,8)),
-            pieces.Knight('Knight', 'W',(7,8)),
-            pieces.Rock('Rock', 'W',(8,8))]
+        self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')     #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR    - start FEN
         
         self.buildboard()   # baut das Board
     
@@ -78,8 +46,11 @@ class ChessGame():
     
     def checkFree(self, field, color):   # überprüft ob das Feld frei ist von Figuren eigener Farbe
         for piece in self.pieces_on_board:
-            if piece.pos == field and piece.pieceColor == color:
-                return False
+            if piece.pos == field:          #überprüft ob andere Figur auf dem Feld
+                if piece.pieceColor == color:   #wenn figur von eigener Farbe
+                    return False
+                else:
+                    return 'otherCol'       #wenn feld belegt von anderer Farbe dann Rückgabewert= 'otherCol'
         return True
     
     def isOnBoard(self, field):   # überprüft ob das Feld auf dem Brett ist
@@ -90,27 +61,36 @@ class ChessGame():
             return False
     
     def checkMove(self, field, color):     # vereint die isOnboard und checkFree
-        if self.checkFree(field, color) and self.isOnBoard(field): 
-            return True
+        freeCheck = self.checkFree(field, color)
+        onBoard = self.isOnBoard(field)
+        if onBoard:                       # wernn feld auf dem brett soll es erbnis von checkFree zurück geben möglich: Tru/False/'otherCol'
+            return freeCheck
         else: 
             return False
     
-    def get_legal_moves(self,pos):  # fasst in liste(legal_moves) die züge aus moveSet der Pieces zusammen wenn diese checkmove Test standhalten
-        for piece in self.pieces_on_board:
-            if piece.pos == pos:
-                for i in piece.moveSet:
-                    move = piece.pos[0] + i[0], piece.pos[1] + i[1]
-                    if self.checkMove(move, piece.pieceColor):
-                        self.legal_moves.append(move)
+    def get_legal_moves(self,piece):  # fasst in liste(legal_moves) die züge aus moveSet der Pieces zusammen wenn diese checkmove Test standhalten
+        checking_list_moves = piece.moveSet
+        for i in checking_list_moves:
+            for j in i:
+                move = piece.pos[0] + j[0], piece.pos[1] + j[1]
+                resCheck = self.checkMove(move, piece.pieceColor)
+                if resCheck == True:                #falls auf Brett und frei 
+                    self.legal_moves.append(move)
+                elif resCheck == 'otherCol':        #falls figur anderer Farbe auf Feld
+                    self.legal_moves.append(move)       #soll das feld noch hinzufügen und dann abbrechen
+                    break
+                else:                   #abbrechen wenn nicht feld nicht auf dem Brett o. Figur eigener Farbe auf Feld
+                    break
                         
     def move1(self):     # move beginn
         if not self.moving:
             for piece in self.pieces_on_board: 
                 if self.getFieldfromPosition() == piece.pos:
                     self.clickedPiece = piece
-                    self.get_legal_moves(piece.pos)
-                    if self.legal_moves != []: self.moving = True
-                
+                    self.get_legal_moves(piece)
+                    if self.legal_moves != []: 
+                        self.moving = True
+                    
     
               
     def move2(self):        #  move Ende      
@@ -122,15 +102,65 @@ class ChessGame():
                         if piece1.pos == posTar:
                             self.pieces_on_board.remove(piece1)
                     self.clickedPiece.pos = field
-                    
-                    #reset
+                    #reset nach zug
                     self.clickedPiece = None
                     self.legal_moves = []
                     self.moving = False
+            
+            
+            if self.clickedPiece and posTar != self.clickedPiece.pos:      
+                #reset nach click auf anderes Feld
+                self.clickedPiece = None
+                self.legal_moves = []
+                self.moving = False
+            
+            
+                
     
     
                 
+    def FENinterpreter(self, FENstring):    #übersetzt FEN Notation
+        pieceList = []
+        rows = FENstring.split('/')
+        isInt = False
+        for i in range(1,9):
+            count = 1
+            for j in rows[i-1]:
+                try:
+                    int(j)
+                    count += int(j)
+                    isInt = True
+                except ValueError:
+                    isInt = False
                 
+                if not isInt:
+                    if j == 'r':
+                        pieceList.append(pieces.Rock('Rock', 'B', (count,i)))
+                    if j == 'R':
+                        pieceList.append(pieces.Rock('Rock', 'W', (count,i)))
+                    if j == 'n':
+                        pieceList.append(pieces.Knight('Knight', 'B', (count,i)))
+                    if j == 'N':
+                        pieceList.append(pieces.Knight('Knight', 'W', (count,i)))
+                    if j == 'b':
+                        pieceList.append(pieces.Bishop('Bishop', 'B', (count,i)))
+                    if j == 'B':
+                        pieceList.append(pieces.Bishop('Bishop', 'W', (count,i)))
+                    if j == 'q':
+                        pieceList.append(pieces.Queen('Queen', 'B', (count,i)))
+                    if j == 'Q':
+                        pieceList.append(pieces.Queen('Queen', 'W', (count,i)))
+                    if j == 'k':
+                        pieceList.append(pieces.King('King', 'B', (count,i)))
+                    if j == 'K':
+                        pieceList.append(pieces.King('King', 'W', (count,i)))
+                    if j == 'p':
+                        pieceList.append(pieces.Pawn('Pawn', 'B', (count,i)))
+                    if j == 'P':
+                        pieceList.append(pieces.Pawn('Pawn', 'W', (count,i)))
+                        
+                    count += 1   
+        return pieceList     
     
     def getFieldfromPosition(self): #übersetzt mouseposition in Feld 
         x,y = pygame.mouse.get_pos()
@@ -139,8 +169,9 @@ class ChessGame():
         return round(x//self.FIELD_SIZE),round(y//self.FIELD_SIZE)
     
     def drawBoard(self): # malt das Brett auf den Screen
-        color1 = pygame.Color('lightgrey')
-        color2 = pygame.Color('skyblue3')
+        color1 = pygame.Color('burlywood1')
+        color2 = pygame.Color('burlywood3')
+        borderColor = pygame.Color('burlywood4')
         
         for i in self.board:
             x,y = i
@@ -151,10 +182,12 @@ class ChessGame():
                 self.screen.fill(color1, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE))
                 fontImg = self.font.render(fontStr, True, pygame.Color('darkslategray'))
                 self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
+                pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  4)
             else:
                 self.screen.fill(color2, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE))
                 fontImg = self.font.render(fontStr, True, pygame.Color('darkslategray'))
                 self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
+                pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  4)
     
     def drawPieces(self):   #malt die Pieces auf den screen
         for piece in self.pieces_on_board:
