@@ -59,8 +59,19 @@ class Rock(Piece):
     def __init__(self, pieceKind, color, pos):
         self.moveSet = [[], [], [], []] 
         self.prozessmoveSet()
+        self.moved = False
         super(Rock, self).__init__(pieceKind, color, pos)
-       
+        
+    def reset_moveSet(self):
+        self.moveSet = [[], [], [], []]
+        self.prozessmoveSet()
+
+    def update_moveSet(self, piecesOnBoard):
+        self.reset_moveSet()
+        if self.pieceColor == 'W' and not (self.pos == (1,8) or self.pos == (8,8)):
+            self.moved = True
+        elif self.pieceColor == 'B' and not (self.pos == (1,1) or self.pos == (8,1)):
+            self.moved = True
     
     def prozessmoveSet(self):
         for i in range(1,8):
@@ -113,10 +124,18 @@ class Queen(Piece):
 class King(Piece):
     def __init__(self, pieceKind, color, pos):
         self.moveSet = [[(1,1)], [(1,0)], [(1,-1)], [(0,-1)], [(-1,-1)], [(-1,0)], [(-1,1)], [(0,1)]]
+        self.moved = False
         super(King, self).__init__(pieceKind, color, pos)
 
-    
+    def reset_moveSet(self):
+        self.moveSet = [[(1,1)], [(1,0)], [(1,-1)], [(0,-1)], [(-1,-1)], [(-1,0)], [(-1,1)], [(0,1)]]
 
+    def update_moveSet(self, piecesOnBoard):
+        self.reset_moveSet()
+        if self.pos != (5,8) and self.pieceColor == 'W':
+            self.moved = True
+        elif self.pos != (5,1) and self.pieceColor == 'B':
+            self.moved = True
                     
 
 

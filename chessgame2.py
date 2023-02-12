@@ -27,7 +27,7 @@ class ChessGame():
         
         
         #die Figuren auf dem Brett 
-        self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')     #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR    - start FEN
+        self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR ')     #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR    - start FEN
         
         self.buildboard()   # baut das Board
     
@@ -60,7 +60,7 @@ class ChessGame():
         else: 
             return False
     
-    def checkMove(self, field, color):     # vereint die isOnboard und checkFree
+    def checkMove(self, field, color):     # vereint die isOnboard und checkFree  #Todo: schach
         freeCheck = self.checkFree(field, color)
         onBoard = self.isOnBoard(field)
         if onBoard:                       # wernn feld auf dem brett soll es erbnis von checkFree zurück geben möglich: Tru/False/'otherCol'
@@ -72,6 +72,35 @@ class ChessGame():
         piece.update_moveSet(self.pieces_on_board)
         checking_list_moves = piece.moveSet
         
+        #ROCHADE -- schnittstelle schach
+        if piece.pieceKind == 'King' and piece.moved == False:          
+            if piece.pieceColor == 'W':  
+                if self.checkFree((6,8), 'W') and self.checkFree((7,8), 'W'):
+                    #kleine Rochade für weiß
+                    for  i in self.pieces_on_board:
+                        if i.pieceKind == 'Rock' and i.moved == False and i.pos == (8,8):
+                            checking_list_moves.append([(2,0)])
+                        
+                if self.checkFree((2,8), 'W') and self.checkFree((3,8), 'W') and self.checkFree((4,8), 'W'):
+                    #große Rochade für weiß
+                    for  i in self.pieces_on_board:
+                        if i.pieceKind == 'Rock' and i.moved == False and i.pos == (1,8):  
+                            checking_list_moves.append([(-2,0)])
+                    
+            else:
+                if self.checkFree((6,1), 'B') and self.checkFree((7,1), 'B'):
+                    #kleine Rochade für schwart       
+                    for  i in self.pieces_on_board:
+                        if i.pieceKind == 'Rock' and i.moved == False and i.pos == (8,1):
+                            checking_list_moves.append([(2,0)])
+                        
+                if self.checkFree((2,1), 'B') and self.checkFree((3,1), 'B') and self.checkFree((4,1), 'B'):
+                    #große Rochade für schwarz
+                    for  i in self.pieces_on_board:
+                        if i.pieceKind == 'Rock' and i.moved == False and i.pos == (1,1):
+                            checking_list_moves.append([(-2,0)])
+        
+        #*eigentliches getlegalmoves      
         for i in checking_list_moves:
             for j in i:
                 move = piece.pos[0] + j[0], piece.pos[1] + j[1]
@@ -103,6 +132,20 @@ class ChessGame():
                     for piece1 in self.pieces_on_board:      # schlagen
                         if piece1.pos == posTar:
                             self.pieces_on_board.remove(piece1)
+                    
+                    #Rochade (Turmbewegung)
+                    if self.clickedPiece.pieceKind == 'King':
+                        if (self.clickedPiece.pos[0] - field[0]) == 2:      #große Rochade
+    	                    for piece in self.pieces_on_board:
+                                if piece.pieceColor == self.clickedPiece.pieceColor and piece.pieceKind == 'Rock' and piece.pos[0] == 1:
+                                    piece.pos = (piece.pos[0] + 3, piece.pos[1])
+            
+                        elif self.clickedPiece.pos[0] - field[0] == -2:     #kleine Rochade
+                            for piece in self.pieces_on_board:
+                                if piece.pieceColor == self.clickedPiece.pieceColor and piece.pieceKind == 'Rock' and piece.pos[0] == 8:
+                                    piece.pos = (piece.pos[0] - 2, piece.pos[1])
+
+                    
                     self.clickedPiece.pos = field
                     #reset nach zug
                     self.clickedPiece = None
@@ -255,3 +298,6 @@ b.main_loop()
 #Todo: en passant
 #Todo: Rochade
 #Todo: Umwandlung
+#Todo: Hashmap anstatt pieces_on_board list
+#Todo: derzeitige Partie in FEN
+
