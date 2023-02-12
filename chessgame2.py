@@ -69,7 +69,9 @@ class ChessGame():
             return False
     
     def get_legal_moves(self,piece):  # fasst in liste(legal_moves) die züge aus moveSet der Pieces zusammen wenn diese checkmove Test standhalten
+        piece.update_moveSet(self.pieces_on_board)
         checking_list_moves = piece.moveSet
+        
         for i in checking_list_moves:
             for j in i:
                 move = piece.pos[0] + j[0], piece.pos[1] + j[1]
@@ -216,7 +218,7 @@ class ChessGame():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
-            if event.type == pygame.MOUSEBUTTONDOWN:    #! hier zug einfügen
+            if event.type == pygame.MOUSEBUTTONDOWN:   
                 self.move1()
                 self.move2()
                 
@@ -248,7 +250,8 @@ b = ChessGame()
 b.main_loop()
 
 
-
-#Todo: Wie reagiern auf pinned Pieces und Schach
-#Todo: legalmoves: was wenn was dazwischen
-#Todo: Pawn soll schräg schlagen + wenn auf 2.Reihe zwei FeldZug + en passant
+#Todo: Schach
+#Todo: Fesslung
+#Todo: en passant
+#Todo: Rochade
+#Todo: Umwandlung
