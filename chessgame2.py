@@ -9,7 +9,7 @@ class ChessGame():
     def __init__(self): #soll später in "Einstelungen" veränderbar sein
         self.screen_color = pygame.Color('white')
         self.root = 8   #jedes Schachspiel 8x8 Feld
-        self.FIELD_SIZE = 100   
+        self.FIELD_SIZE = 100
         self.piece_Size = self.FIELD_SIZE - 15
         self.screen = pygame.display.set_mode((self.FIELD_SIZE*self.root, self.FIELD_SIZE*self.root))
         self.screen_rect = self.screen.get_rect()
@@ -27,7 +27,7 @@ class ChessGame():
         
         
         #die Figuren auf dem Brett 
-        self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR ')     #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR    - start FEN
+        self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')     #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR    - start FEN
         
         self.buildboard()   # baut das Board
     
@@ -129,9 +129,6 @@ class ChessGame():
         if self.moving:
             for field in self.legal_moves:
                 if posTar == field:
-                    for piece1 in self.pieces_on_board:      # schlagen
-                        if piece1.pos == posTar:
-                            self.pieces_on_board.remove(piece1)
                     
                     #Rochade (Turmbewegung)
                     if self.clickedPiece.pieceKind == 'King':
@@ -145,8 +142,43 @@ class ChessGame():
                                 if piece.pieceColor == self.clickedPiece.pieceColor and piece.pieceKind == 'Rock' and piece.pos[0] == 8:
                                     piece.pos = (piece.pos[0] - 2, piece.pos[1])
 
+                    #En Passant
+                    list_enpassant = []
+                    if self.clickedPiece.pieceKind == 'Pawn':
+                        if self.clickedPiece.pos[1] - field[1] == -2:                         #Schwarz mit Doppelzug -> führt zu möglichen En Passant für Weiß
+                            for piece in self.pieces_on_board:                                                                          #Sucht nach einem möglichen weißen Piece, welches für En Passant in Frage kommen würde
+                                if piece.pieceKind == 'Pawn' and piece.pieceColor == 'W' and piece.pos == (field[0] + 1, field[1]):     #Weiß schlägt schräg nach oben links über den schwarzen Bauer
+                                    piece.enPassant = 1
+                                    list_enpassant.append((field[0] + 1, field[1]))
+                                elif piece.pieceKind == 'Pawn' and piece.pieceColor == 'W' and piece.pos == (field[0] - 1, field[1]):   #Weiß schlägt schräg nach oben rechts über den schwarzen Bauer
+                                    piece.enPassant = -1
+                                    list_enpassant.append((field[0] - 1, field[1]))
+                        
+                                
+                        elif self.clickedPiece.pos[1] - field[1] == 2:                        #Weiß mit Doppelzug -> führt zu möglichen En Passant für Schwarz
+                            for piece in self.pieces_on_board:                                                                          #Sucht nach einem möglichen schwarzen Piece , welches für En Passant in Frage kommen würde
+                                if piece.pieceKind == 'Pawn' and piece.pieceColor == 'B' and piece.pos == (field[0] + 1, field[1]):     #Schwarz schlägt schräg nach unten links unter den weißen Bauer
+                                    piece.enPassant = 1
+                                    list_enpassant.append((field[0] + 1, field[1]))
+                                elif piece.pieceKind == 'Pawn' and piece.pieceColor == 'B' and piece.pos == (field[0] - 1, field[1]):   #Schwarz schlägt schräg nach unten rechts unter den weißen Bauer
+                                    piece.enPassant = -1
+                                    list_enpassant.append((field[0] - 1, field[1]))
+
+                        if  self.clickedPiece.enPassant != None and field == (self.clickedPiece.pos[0] - self.clickedPiece.enPassant, self.clickedPiece.pos[1] + self.clickedPiece.moveSet[0][0][1]):
+                            for piece in self.pieces_on_board:
+                                if piece.pos == (self.clickedPiece.pos[0] - self.clickedPiece.enPassant, self.clickedPiece.pos[1]):
+                                    self.pieces_on_board.remove(piece) 
+                            self.clickedPiece.enPassant = None
                     
-                    self.clickedPiece.pos = field
+                    
+                    ########################################################################     
+                    for piece in self.pieces_on_board:
+                        if piece.pieceKind == 'Pawn' and piece.pos not in list_enpassant:   #en passant Recht entzogen falls anderer Zug getätigt    
+                            piece.enPassant = None   
+                        if piece.pos == posTar:
+                            self.pieces_on_board.remove(piece) # schlagen
+
+                    self.clickedPiece.pos = field   #eigentlicher Zug
                     #reset nach zug
                     self.clickedPiece = None
                     self.legal_moves = []
@@ -264,6 +296,9 @@ class ChessGame():
             if event.type == pygame.MOUSEBUTTONDOWN:   
                 self.move1()
                 self.move2()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:     #reset zu folgendem FEN-string
+                    self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
                 
                 
                 
@@ -293,11 +328,11 @@ b = ChessGame()
 b.main_loop()
 
 
+#Todo: doppelzug soll nicht schlagen
+#Todo: Umwandlung
+#Todo: macht den blöden Code schön
 #Todo: Schach
 #Todo: Fesslung
-#Todo: en passant
-#Todo: Rochade
-#Todo: Umwandlung
 #Todo: Hashmap anstatt pieces_on_board list
 #Todo: derzeitige Partie in FEN
 

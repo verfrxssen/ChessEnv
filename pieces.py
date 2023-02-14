@@ -18,6 +18,7 @@ class Piece:
 class Pawn(Piece):  #erbt von Piece
     def __init__(self, pieceKind, color, pos):
         self.moveSet = [[(0,1)]] if color == 'B' else [[(0,-1)]]
+        self.enPassant = None
         super(Pawn, self).__init__(pieceKind, color, pos)
     
     def reset_moveSet(self):
@@ -51,6 +52,28 @@ class Pawn(Piece):  #erbt von Piece
         for i in piecesOnBoard:
             if i.pos == (self.pos[0] + vorwärts[0], self.pos[1] + vorwärts[1]):
                 self.moveSet.remove(self.moveSet[0])
+
+        #en passant
+        if self.enPassant != None:
+            if self.pieceColor == 'W':              #En Passant für Weiß
+                if self.enPassant == -1:
+                    self.moveSet.append([(1, -1)])  #schlägt schräg nach oben rechts über den schwarzen Bauer
+                else:
+                    self.moveSet.append([(-1, -1)]) #schlägt schräg nach oben links über den schwarzen Bauer
+            else:
+                if self.enPassant == -1:            #En Passant für Schwarz
+                    self.moveSet.append([(1, 1)])   #schlägt schräg nach unten links unter den weißen Bauer
+                else:
+                    self.moveSet.append([(-1, 1)])  #schlägt schräg nach unten rechts unter den weißen Bauer
+        
+        #zieht enPassant Recht zurück 
+        if self.pos[1] > 4 and self.pieceColor == 'W':
+            self.enPassant = None
+        elif self.pos[1] < 5 and self.pieceColor == 'B':
+            self.enPassant = None
+
+            
+
         
     
     #* rule: wenn W+2./ B+7. reihe dann 2S möglich sonst 1S und schräg wenn gegnerische Figur außer König
