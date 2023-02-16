@@ -18,7 +18,7 @@ class ChessGame():
         self.done = False
         self.fps = 60.0
         self.board = []
-        self.font = pygame.font.SysFont(None, self.FIELD_SIZE//2)
+        self.font = pygame.font.SysFont('monospace', self.piece_Size//4, bold=True)
         
         #für die Züge
         self.legal_moves = []
@@ -295,25 +295,35 @@ class ChessGame():
         return round(x//self.FIELD_SIZE),round(y//self.FIELD_SIZE)
     
     def drawBoard(self): # malt das Brett auf den Screen
-        color1 = pygame.Color('burlywood1')
-        color2 = pygame.Color('burlywood3')
+        color1 = pygame.Color(229, 228, 197)
+        color2 = pygame.Color(49, 96, 138)
         borderColor = pygame.Color('burlywood4')
         
         for i in self.board:
             x,y = i
+            abc = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
             x = (x-1)*self.FIELD_SIZE
             y = (y-1)*self.FIELD_SIZE
             fontStr = str(i).replace('(', ' ').replace(')', ' ')
             if self.checkColor(i) == 'W':
                 self.screen.fill(color1, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE))
-                fontImg = self.font.render(fontStr, True, pygame.Color('darkslategray'))
-                self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
-                pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  4)
+                #fontImg = self.font.render(fontStr, True, pygame.Color('black'))
+                #self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
+                #pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  3)
             else:
                 self.screen.fill(color2, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE))
-                fontImg = self.font.render(fontStr, True, pygame.Color('darkslategray'))
-                self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
-                pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  4)
+                #fontImg = self.font.render(fontStr, True, pygame.Color('black'))
+                #self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
+                #pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  3)
+        count = 7
+        for i in range(1,9):
+            fontImg = self.font.render(abc[i-1], True, pygame.Color('black'))
+            fontImg2 = self.font.render(str(i), True, pygame.Color('black'))
+            self.screen.blit(fontImg, ((self.FIELD_SIZE*i - fontImg.get_width() - self.FIELD_SIZE//15), self.FIELD_SIZE*8 - fontImg.get_height()))
+            self.screen.blit(fontImg2, (self.FIELD_SIZE//15, self.FIELD_SIZE*count + self.FIELD_SIZE//10))
+            count -= 1
+            
+        #! Themes sollen einstellbar sein
     
     def drawPieces(self):   #malt die Pieces auf den screen
         for piece in self.pieces_on_board:
@@ -379,9 +389,8 @@ class ChessGame():
 b = ChessGame()
 b.main_loop()
 
-
+#Todo: unterschiedliche Themes
 #Todo: doppelzug soll nicht schlagen
-#Todo: Umwandlung
 #Todo: macht den blöden Code schön
 #Todo: Schach
 #Todo: Fesslung
