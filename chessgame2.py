@@ -1,5 +1,6 @@
 import pygame           
 import pieces       #andere Datei aus gleichem Ordner
+import os
 
 pygame.init()
 
@@ -24,6 +25,10 @@ class ChessGame():
         self.clickedPiece = None     
         self.moving = False
         
+        #umwandlung
+        self.umwandlung = False
+        self.umwandlungRectsImg = []
+        self.umwandlungsPos = None
         
         
         #die Figuren auf dem Brett 
@@ -170,7 +175,11 @@ class ChessGame():
                                     self.pieces_on_board.remove(piece) 
                             self.clickedPiece.enPassant = None
                     
-                    
+                        #umwandlung
+                        if field[1] == 1 and self.clickedPiece.pieceColor == 'W':
+                            self.umwandlungMeth1(field)
+                        elif field[1] == 8 and self.clickedPiece.pieceColor == 'B':
+                            self.umwandlungMeth1(field)
                     ########################################################################     
                     for piece in self.pieces_on_board:
                         if piece.pieceKind == 'Pawn' and piece.pos not in list_enpassant:   #en passant Recht entzogen falls anderer Zug getätigt    
@@ -192,9 +201,49 @@ class ChessGame():
                 self.moving = False
             
             
-                
     
+    #1. Part der Umwandlung, ausgeführt sobald Buaer auf letzter Reihe, bereitet Liste und Pos vor
+    def umwandlungMeth1(self, move):
+        self.umwandlung = True
+        x, y = move 
+        if x == 1:
+            x += 1
+        elif x == 8:
+            x -= 0.5
+        x *= self.piece_Size
+        y *= self.piece_Size
+        color = self.clickedPiece.pieceColor
+        umwandlungList = [[pygame.image.load(os.path.join('piecesImg',f'Queen_{color}.png')), pieces.Queen('Queen', color, move)],
+                                    [pygame.image.load(os.path.join('piecesImg',f'Rock_{color}.png')), pieces.Rock('Rock', color, move)],
+                                    [pygame.image.load(os.path.join('piecesImg',f'Bishop_{color}.png')), pieces.Bishop('Bishop', color, move)],
+                                    [pygame.image.load(os.path.join('piecesImg',f'Knight_{color}.png')), pieces.Knight('Knight', color, move)]]
+        count = 2
+        for i in umwandlungList:
+            i[0] = pygame.transform.scale(i[0], (self.piece_Size,self.piece_Size))
+            rect = pygame.Rect(x - self.piece_Size*count, y, self.piece_Size, self.piece_Size)
+            count -= 1
+            i.append(rect)
+        
+        self.umwandlungsPos = move
+        self.umwandlungRectsImg = umwandlungList
+     
+    #2. Part der Umwandlung; führt die Auswahl aus und wandelt das Piece um          
+    def umwandlungMeth2(self):
+        x,y = pygame.mouse.get_pos()
+        for i in self.umwandlungRectsImg:
+            if (x > i[2].x and y > i[2].y) and (x < i[2].x + i[2].width and y < i[2].y+i[2].height):
+                for j in self.pieces_on_board:
+                    if j.pos == self.umwandlungsPos:
+                        self.pieces_on_board.remove(j)
+                        self.pieces_on_board.append(i[1])
+                        self.umwandlung = False
     
+    #3.Part der Umwandlung, macht sie sichtbar
+    def drawUmwandlung(self):
+        for i in self.umwandlungRectsImg:
+            self.screen.fill(pygame.Color('skyblue1'), i[2])
+            pygame.draw.rect(self.screen, pygame.Color('black'), i[2], 4)
+            self.screen.blit(i[0], i[2])
                 
     def FENinterpreter(self, FENstring):    #übersetzt FEN Notation
         pieceList = []
@@ -293,9 +342,12 @@ class ChessGame():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
-            if event.type == pygame.MOUSEBUTTONDOWN:   
-                self.move1()
-                self.move2()
+            if event.type == pygame.MOUSEBUTTONDOWN:  
+                if not self.umwandlung: 
+                    self.move1()
+                    self.move2()
+                else: 
+                    self.umwandlungMeth2()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:     #reset zu folgendem FEN-string
                     self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
@@ -313,7 +365,7 @@ class ChessGame():
             self.drawBoard()
             self.drawPieces()
             if self.moving: self.draw_move()
-        
+            if self.umwandlung: self.drawUmwandlung()
             
             self.event_loop()
             
