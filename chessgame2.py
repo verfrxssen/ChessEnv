@@ -11,14 +11,27 @@ class ChessGame():
         self.screen_color = pygame.Color('white')
         self.root = 8   #jedes Schachspiel 8x8 Feld
         self.FIELD_SIZE = 100
-        self.piece_Size = self.FIELD_SIZE - 15
+        self.piece_Size = self.FIELD_SIZE - self.FIELD_SIZE//8
         self.screen = pygame.display.set_mode((self.FIELD_SIZE*self.root, self.FIELD_SIZE*self.root))
         self.screen_rect = self.screen.get_rect()
         self.clock = pygame.time.Clock()
         self.done = False
         self.fps = 60.0
         self.board = []
+        self.imageFolder = 'piecesImg'
+        
+        #themes
+        self.themeCount = 0
+        self.themeList = [[pygame.Color(229, 228, 197), pygame.Color(49, 96, 138), pygame.font.SysFont('monospace', self.piece_Size//4, bold=True)],
+                          [pygame.Color(234, 235, 196), pygame.Color(109, 155, 79), pygame.font.SysFont('monospace', self.piece_Size//4, bold=True)],
+                          [pygame.Color(240, 208, 160), pygame.Color(174, 114, 73), pygame.font.SysFont('monospace', self.piece_Size//4, bold=True)],
+                          [pygame.Color(120, 119, 118), pygame.Color(86, 85, 84), pygame.font.SysFont('monospace', self.piece_Size//4, bold=True)],
+                          [pygame.Color(193, 170, 190), pygame.Color(120, 60, 120), pygame.font.SysFont('monospace', self.piece_Size//4, bold=True, italic=True)]]
+        self.colorB1 = pygame.Color(229, 228, 197)
+        self.colorB2 = pygame.Color(49, 96, 138)
         self.font = pygame.font.SysFont('monospace', self.piece_Size//4, bold=True)
+        self.lastmove = []
+        self.lastmoveCol = [pygame.Color(162, 42, 42), pygame.Color(212, 140, 140)]
         
         #für die Züge
         self.legal_moves = []
@@ -187,6 +200,8 @@ class ChessGame():
                         if piece.pos == posTar:
                             self.pieces_on_board.remove(piece) # schlagen
 
+                    self.lastmove = [self.clickedPiece.pos, field] #last move nur für darstellung 
+                    
                     self.clickedPiece.pos = field   #eigentlicher Zug
                     #reset nach zug
                     self.clickedPiece = None
@@ -213,10 +228,10 @@ class ChessGame():
         x *= self.piece_Size
         y *= self.piece_Size
         color = self.clickedPiece.pieceColor
-        umwandlungList = [[pygame.image.load(os.path.join('piecesImg',f'Queen_{color}.png')), pieces.Queen('Queen', color, move)],
-                                    [pygame.image.load(os.path.join('piecesImg',f'Rock_{color}.png')), pieces.Rock('Rock', color, move)],
-                                    [pygame.image.load(os.path.join('piecesImg',f'Bishop_{color}.png')), pieces.Bishop('Bishop', color, move)],
-                                    [pygame.image.load(os.path.join('piecesImg',f'Knight_{color}.png')), pieces.Knight('Knight', color, move)]]
+        umwandlungList = [[pygame.image.load(os.path.join(self.imageFolder,f'Queen_{color}.png')), pieces.Queen('Queen', color, move)],
+                                    [pygame.image.load(os.path.join(self.imageFolder,f'Rock_{color}.png')), pieces.Rock('Rock', color, move)],
+                                    [pygame.image.load(os.path.join(self.imageFolder,f'Bishop_{color}.png')), pieces.Bishop('Bishop', color, move)],
+                                    [pygame.image.load(os.path.join(self.imageFolder,f'Knight_{color}.png')), pieces.Knight('Knight', color, move)]]
         count = 2
         for i in umwandlungList:
             i[0] = pygame.transform.scale(i[0], (self.piece_Size,self.piece_Size))
@@ -241,8 +256,8 @@ class ChessGame():
     #3.Part der Umwandlung, macht sie sichtbar
     def drawUmwandlung(self):
         for i in self.umwandlungRectsImg:
-            self.screen.fill(pygame.Color('skyblue1'), i[2])
-            pygame.draw.rect(self.screen, pygame.Color('black'), i[2], 4)
+            self.screen.fill(pygame.Color(223, 213, 213), i[2])
+            pygame.draw.rect(self.screen, pygame.Color(78, 78, 78), i[2], 1)
             self.screen.blit(i[0], i[2])
                 
     def FENinterpreter(self, FENstring):    #übersetzt FEN Notation
@@ -295,8 +310,8 @@ class ChessGame():
         return round(x//self.FIELD_SIZE),round(y//self.FIELD_SIZE)
     
     def drawBoard(self): # malt das Brett auf den Screen
-        color1 = pygame.Color(229, 228, 197)
-        color2 = pygame.Color(49, 96, 138)
+        color1 = self.colorB1
+        color2 = self.colorB2
         borderColor = pygame.Color('burlywood4')
         
         for i in self.board:
@@ -307,20 +322,15 @@ class ChessGame():
             fontStr = str(i).replace('(', ' ').replace(')', ' ')
             if self.checkColor(i) == 'W':
                 self.screen.fill(color1, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE))
-                #fontImg = self.font.render(fontStr, True, pygame.Color('black'))
-                #self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
-                #pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  3)
             else:
                 self.screen.fill(color2, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE))
-                #fontImg = self.font.render(fontStr, True, pygame.Color('black'))
-                #self.screen.blit(fontImg, (x+ self.FIELD_SIZE//2 - fontImg.get_width()//2, y+ self.FIELD_SIZE//2 - fontImg.get_height()//2))
-                #pygame.draw.rect(self.screen, borderColor, pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE),  3)
+                
         count = 7
         for i in range(1,9):
             fontImg = self.font.render(abc[i-1], True, pygame.Color('black'))
             fontImg2 = self.font.render(str(i), True, pygame.Color('black'))
             self.screen.blit(fontImg, ((self.FIELD_SIZE*i - fontImg.get_width() - self.FIELD_SIZE//15), self.FIELD_SIZE*8 - fontImg.get_height()))
-            self.screen.blit(fontImg2, (self.FIELD_SIZE//15, self.FIELD_SIZE*count + self.FIELD_SIZE//10))
+            self.screen.blit(fontImg2, (self.FIELD_SIZE//20, self.FIELD_SIZE*count + self.FIELD_SIZE//10))
             count -= 1
             
         #! Themes sollen einstellbar sein
@@ -345,8 +355,25 @@ class ChessGame():
             y = (y-1)*self.FIELD_SIZE
             pygame.draw.circle(self.screen, pygame.Color('darkgoldenrod2'), [x + self.FIELD_SIZE//2, y + self.FIELD_SIZE//2], self.FIELD_SIZE//6, 0)    #! noch verändern!!: ist nicht  abhängig von FIELD_SIZE
             
+    def drawLastMove(self): #visuelle darstellung des letzten Zuges
+        if self.lastmove != []:
+            for i in range(2):
+                x,y = self.lastmove[i]
+                x = (x-1)*self.FIELD_SIZE
+                y = (y-1)*self.FIELD_SIZE
+                self.screen.fill(self.lastmoveCol[i], pygame.Rect(x, y, self.FIELD_SIZE, self.FIELD_SIZE))
     
-    
+    def wechsleTheme(self):
+        if self.themeCount >= len(self.themeList) - 1:
+            self.themeCount = 0
+            self.colorB1 = self.themeList[self.themeCount][0]
+            self.colorB2 = self.themeList[self.themeCount][1]
+            self.font = self.themeList[self.themeCount][2]
+        else:
+            self.themeCount += 1
+            self.colorB1 = self.themeList[self.themeCount][0]
+            self.colorB2 = self.themeList[self.themeCount][1]
+            self.font = self.themeList[self.themeCount][2]
     
     def event_loop(self):   #eventloop - reagiert auf keys und mouse
         for event in pygame.event.get():
@@ -361,18 +388,18 @@ class ChessGame():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:     #reset zu folgendem FEN-string
                     self.pieces_on_board = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
-                
-                
-                
-            
+                if event.key == pygame.K_t:     #reset zu folgendem FEN-string
+                    self.wechsleTheme()
                         
-                                       
+                    
+                                              
     def main_loop(self):    #fasst draw methoden zusammen
         while not self.done:
             
             self.clock.tick(self.fps)
             self.screen.fill(self.screen_color)
             self.drawBoard()
+            self.drawLastMove()
             self.drawPieces()
             if self.moving: self.draw_move()
             if self.umwandlung: self.drawUmwandlung()
