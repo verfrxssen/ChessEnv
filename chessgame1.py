@@ -48,8 +48,13 @@ class ChessGame():
 
         #die Figuren auf dem Brett 
         self.boardDict = self.FENinterpreter('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')     #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR    - start FEN
+        self.boardCopy = self.boardDict.copy()
         self.whitePositions = []
         self.blackPositions = []
+        
+        #Ki
+        self.boardPoses = []
+        self.count = 0
         
         self.setup_figureList()
     
@@ -100,6 +105,7 @@ class ChessGame():
             return False
     
     def get_legal_moves(self, field):  # fasst in liste(legal_moves) die züge aus moveSet der Pieces zusammen wenn diese checkmove Test standhalten
+        posMoves = []
         piece = self.boardDict[field]
         if piece.pieceColor == self.amZug:
             piece.reset_moveSet()
@@ -114,12 +120,14 @@ class ChessGame():
                     move = field[0] + j[0], field[1] + j[1]
                     resCheck = self.checkMove(move, piece.pieceColor)
                     if resCheck == True:                #falls auf Brett und frei 
-                        self.legal_moves.append(move)
+                        posMoves.append(move)
                     elif resCheck == 'otherCol':        #falls figur anderer Farbe auf Feld
-                        self.legal_moves.append(move)       #soll das feld noch hinzufügen und dann abbrechen
+                        posMoves.append(move)       #soll das feld noch hinzufügen und dann abbrechen
                         break
                     else:                   #abbrechen wenn nicht feld nicht auf dem Brett o. Figur eigener Farbe auf Feld
                         break
+        return posMoves
+                        
     
     #* legal Moves for Pawn:
     def getMovesPawn(self, field):
@@ -193,7 +201,7 @@ class ChessGame():
         if self.currentMove == []:
             clickedField = self.getFieldfromPosition()
             if self.isOnBoard(clickedField) and self.boardDict[clickedField] != None:
-                self.get_legal_moves(clickedField)
+                self.legal_moves = self.get_legal_moves(clickedField)
                 self.rootSquare = clickedField
                 if self.legal_moves != []: 
                     self.currentMove.append(clickedField)
@@ -210,7 +218,8 @@ class ChessGame():
             clickedPiece = self.boardDict[rootField]
             for field in self.legal_moves:
                 if posTar == field:
-                    self.lastmove = []  
+                    self.lastmove = []
+                    self.boardCopy = self.boardDict.copy()  
                     
                     if clickedPiece.pieceKind == 'King':
                         #Rochade (Turmbewegung)
@@ -290,7 +299,6 @@ class ChessGame():
                     
                     self.lastmove.append((rootField, clickedPiece)) #für UndoMove 
                     self.lastmove.append((posTar, schlagPiece)) #für UndoMove 
-                    print(self.lastmove)
                     
                     #*eigentlicher Zug
                     self.boardDict.update({posTar : clickedPiece})
@@ -328,8 +336,7 @@ class ChessGame():
         if self.lastmove != []:
             self.switchAmZug() 
             
-            for i in self.lastmove:    
-                self.boardDict.update({i[0] : i[1]})
+            self.boardDict = self.boardCopy
             
             self.setup_figureList()
                 
@@ -540,11 +547,42 @@ class ChessGame():
                 y = (i[1] - 1)* self.FIELD_SIZE
                 pygame.draw.circle(self.screen, pygame.Color('darkgreen'), [x + self.FIELD_SIZE//2, y + self.FIELD_SIZE//2], self.FIELD_SIZE//3, 0)
     
-    #*################################################# KI
+#*################################################# KI
     def get_all_legalMoves(self):
-        pass
+        moves = []
+        if self.amZug == 'W':
+            for i in self.whitePositions:
+                for j in self.get_legal_moves(i):
+                    moves.append((i, j))
+        else:
+            for i in self.blackPositions:
+                for j in self.get_legal_moves(i):
+                    moves.append((i, j))
+        return moves
     
-    #*################################################# KI ende
+    def countMoves(self, depth):
+        if depth == 0:
+            return 1
+        
+        listMoves = self.get_all_legalMoves()
+        num = 0
+        
+        for i in listMoves:
+            self.makeMove(i)
+            num += self.countMoves(depth - 1)
+            self.undoMove()
+        
+        return num
+    
+    def testCountMove(self):
+        for i in range(2):
+            start = time.time()
+            positions = self.countMoves(i)
+            ende = time.time()
+            output = f'Tiefe {i}: {positions} - Laufzeit: {round(ende-start, 4)} sec'
+            print(output)
+    
+#*################################################# KI ende
         
     
     def event_loop(self):   #eventloop - reagiert auf keys und mouse
@@ -566,6 +604,9 @@ class ChessGame():
                     self.wechsleTheme()
                 if event.key == pygame.K_SPACE:
                     self.undoMove()
+                if event.key == pygame.K_1:
+                    self.testCountMove()
+                    
                                    
                                               
     def main_loop(self):    #fasst draw methoden zusammen
